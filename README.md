@@ -39,8 +39,8 @@ The last step prints every pole-to-pole distance (in meters) and plots their dis
 ## Run it locally
 
 ```bash
-git clone https://github.com/IgorKlymenko/vertical_distance_mapping_warehouse.git
-cd vertical_distance_mapping_warehouse
+git clone https://github.com/IgorKlymenko/drone-warehouse-mapping.git
+cd drone-warehouse-mapping
 uv run src/main.py --video path/to/flight.mp4        # uv installs the dependencies itself
 # or: pip install -r requirements.txt && python src/main.py --video path/to/flight.mp4
 ```
