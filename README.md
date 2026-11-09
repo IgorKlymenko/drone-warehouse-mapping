@@ -14,7 +14,7 @@ Measuring pole-to-pole distances along warehouse racking by hand is slow and err
 
 End to end: raw drone frames in, every bay stitched and measured, bays accumulated into the whole aisle.
 
-![end to end: drone frames to pole-to-pole distances](docs/pipeline.gif)
+![end to end: drone frames to pole-to-pole distances](docs/pipeline_v3.gif)
 
 1. **Pick frames around each pole.** `src/detect_poles.py` runs YOLO on every extracted frame, tracks poles by their ArUco tag, and groups frames so each set spans one pole-to-pole gap.
 2. **Stitch each set.** `src/stitch.py` hands the set to OpenCV's Stitcher.
@@ -26,7 +26,7 @@ End to end: raw drone frames in, every bay stitched and measured, bays accumulat
 
 The whole aisle as one panorama at full resolution. Click to zoom:
 
-![full aisle panorama at native resolution](docs/aisle_full.jpg)
+![full aisle panorama at native resolution](docs/aisle_panorama.jpg)
 
 Four bays from one run, tags detected and boxed:
 
