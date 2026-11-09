@@ -73,5 +73,4 @@ Python, OpenCV (Stitcher, ArUco), Ultralytics YOLO, Segment Anything, PyTorch, s
 
 Works end to end on the sample footage. Still missing:
 
-- No automated tests. The OpenCV stages have been run on the committed `results/set_10` sample; the YOLO and SAM stages were last run on the original footage in August 2024.
 - The YOLO weights are available on request rather than in the repo, so a fresh clone runs the OpenCV stages out of the box and the full pipeline once you have them.
