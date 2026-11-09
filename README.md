@@ -4,7 +4,7 @@ Turns a drone flyover video of warehouse racking into stitched panoramas and mea
 
 ![demo](docs/pipeline.gif)
 
-<!-- docs/pipeline.gif is built from the committed results/set_10 sample. To replace it with a live run: screen-record `python main.py` from src/ with the full pipeline uncommented, then open results/stitched/set_10.jpg and results/stitched_aruco/set_10.jpg. ~15 seconds. -->
+<!-- docs/pipeline.gif and the stage clips in docs/ are built from the committed results/set_10 sample. To replace with a live run: screen-record `python main.py` from src/ with the full pipeline uncommented, ~15 seconds. -->
 
 ## Why I built this
 
@@ -36,20 +36,23 @@ As committed, `main.py` only runs the first step (rotate the video to portrait a
 
 ## How it works
 
-![stages](docs/stages.jpg)
+Four stages, one module each. Every clip below is the same rack bay (`results/set_10`) going through the pipeline.
 
-```
-video ──> detect_poles.py ──> results/set_N/ ──> stitch.py ──> stitched/ ──> segm_rotate.py ──> rotated/
-          (YOLO finds poles,     (frames around    (OpenCV          (SAM mask + linear fit
-           groups frames so       each pole gap)    Stitcher)        on the beam -> tilt angle)
-           each set spans one
-           pole-to-pole gap)                                                   |
-                                                                               v
-                              measure_aruco.py <── stitched_aruco/ <── stitch.mark_aruco
-                              (tag size in px vs known size -> px/unit ratio -> distance between tag centres)
-```
+**1. Pick frames around each pole** — `src/detect_poles.py` runs YOLO on every extracted frame, tracks poles by their ArUco tag, and groups the frames so each set spans one pole-to-pole gap.
 
-Key files: `src/detect_poles.py` decides which frames form a panorama, `src/stitch.py` does the stitching and tag marking, `src/measure_aruco.py` converts pixel distances to metric.
+![frames](docs/01_frames.gif)
+
+**2. Stitch each set into a panorama** — `src/stitch.py` hands the set to OpenCV's Stitcher.
+
+![stitch](docs/02_stitch.gif)
+
+**3. Level it** — `src/segm_rotate.py` detects the shelf beam with YOLO, masks it with SAM, fits a line through the mask, and rotates by that angle.
+
+![rotate](docs/03_rotate.gif)
+
+**4. Find the tags, measure the gap** — `src/measure_aruco.py` detects the ArUco tags, uses the known tag size for a pixels-to-metric ratio, and reports the distance between tag centres.
+
+![measure](docs/04_measure.gif)
 
 ## The hard part
 
