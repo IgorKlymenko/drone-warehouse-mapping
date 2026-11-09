@@ -1,4 +1,4 @@
-# vertical_distance_mapping_warehouse
+# Stitching drone footage into measured warehouse aisles
 
 Turns a drone flyover video of warehouse racking into stitched panoramas and measures the distance between rack poles from the ArUco tags mounted on them. For mapping rack layouts without walking the aisles with a tape measure.
 
