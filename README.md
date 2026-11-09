@@ -4,7 +4,7 @@ Turns a drone flyover video of warehouse racking into stitched panoramas and mea
 
 ![whole aisle stitched from drone video](docs/aisle.jpg)
 
-<sub>One aisle, stitched end to end from a single drone pass. Shown as two rows.</sub>
+<sub>One aisle from a single drone pass, stitched bay by bay. Shown as two rows.</sub>
 
 ## Why I built this
 
@@ -12,7 +12,9 @@ Measuring pole-to-pole distances along warehouse racking by hand is slow and err
 
 ## How it works
 
-![frames to measured panorama](docs/pipeline.gif)
+End to end on one rack bay: raw drone frames in, a distance for every pole pair out.
+
+![end to end: drone frames to pole-to-pole distances](docs/pipeline.gif)
 
 1. **Pick frames around each pole.** `src/detect_poles.py` runs YOLO on every extracted frame, tracks poles by their ArUco tag, and groups frames so each set spans one pole-to-pole gap.
 2. **Stitch each set.** `src/stitch.py` hands the set to OpenCV's Stitcher.
