@@ -8,6 +8,7 @@ import sys
 from natsort import natsorted # pip install natsort # sorting purposes
 
 import argparse
+from aruco_config import ARUCO_DICT, ARUCO_METRIC
 
 IMG_SCALE = 4900 # Video Scale of 4900 used for stitched images after the first cycle
 
@@ -22,11 +23,6 @@ ap = argparse.ArgumentParser()
 # args = vars(ap.parse_args())
 
 
-ARUCO_METRIC = {
-    "0": 0.1,   # even tags in cm
-    "1": 0.084,  # odd tags in cm
-    "99": 0.1 #tags from 1 to 9 and tag 931 in cm
-}
 # Adjust detection parameters to decrease the detection threshold
 arucoParams = cv2.aruco.DetectorParameters()
 
@@ -40,30 +36,6 @@ arucoParams.cornerRefinementMinAccuracy = 0.01
 arucoParams.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
 arucoParams.cornerRefinementWinSize = 5
 arucoParams.cornerRefinementMaxIterations = 10
-
-ARUCO_DICT = {
-	"DICT_4X4_50": cv2.aruco.DICT_4X4_50,
-	"DICT_4X4_100": cv2.aruco.DICT_4X4_100,
-	"DICT_4X4_250": cv2.aruco.DICT_4X4_250,
-	"DICT_4X4_1000": cv2.aruco.DICT_4X4_1000,
-	"DICT_5X5_50": cv2.aruco.DICT_5X5_50,
-	"DICT_5X5_100": cv2.aruco.DICT_5X5_100,
-	"DICT_5X5_250": cv2.aruco.DICT_5X5_250,
-	"DICT_5X5_1000": cv2.aruco.DICT_5X5_1000,
-	"DICT_6X6_50": cv2.aruco.DICT_6X6_50,
-	"DICT_6X6_100": cv2.aruco.DICT_6X6_100,
-	"DICT_6X6_250": cv2.aruco.DICT_6X6_250,
-	"DICT_6X6_1000": cv2.aruco.DICT_6X6_1000,
-	"DICT_7X7_50": cv2.aruco.DICT_7X7_50,
-	"DICT_7X7_100": cv2.aruco.DICT_7X7_100,
-	"DICT_7X7_250": cv2.aruco.DICT_7X7_250,
-	"DICT_7X7_1000": cv2.aruco.DICT_7X7_1000,
-	"DICT_ARUCO_ORIGINAL": cv2.aruco.DICT_ARUCO_ORIGINAL,
-#	"DICT_APRILTAG_16h5": cv2.aruco.DICT_APRILTAG_16h5,
-#	"DICT_APRILTAG_25h9": cv2.aruco.DICT_APRILTAG_25h9,
-#	"DICT_APRILTAG_36h10": cv2.aruco.DICT_APRILTAG_36h10,
-#	"DICT_APRILTAG_36h11": cv2.aruco.DICT_APRILTAG_36h11
-}
 
 
 def detect_aruco(IMAGE_DIR):
