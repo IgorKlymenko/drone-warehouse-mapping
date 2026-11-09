@@ -54,10 +54,6 @@ def rotate_yolo(BASE_DIR, IMAGE_DIR):
     YOLOmodel = YOLO(os.path.join(WEIGHTS_DIR, "yolo/vert-stitch-YOLOv9.pt"))
 
     STITCHED_DIR = os.path.join(IMAGE_DIR, "stitched")
-    # Dirs - change for yourself
-    saved_image_path = os.path.join('runs', 'detect', natsorted(os.listdir(os.path.join('runs', 'detect')))[-1], 'image0.jpg')
-    if os.path.exists(saved_image_path):
-        os.rename(saved_image_path, processed_yolo)
 
     # For each image in the file directory 
     for filename in natsorted(os.listdir(STITCHED_DIR)):

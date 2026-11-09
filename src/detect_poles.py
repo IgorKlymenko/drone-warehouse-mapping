@@ -361,7 +361,7 @@ def draw_distance(SOURCE_DIR, poles):
 
 
 def transform_into_metric(pix_dist, origin_tag, aruco_width):
-    """Helper Function to transform relative distance into mentric using knows dimensions of specifically used in Fling Aruco tags"""
+    """Convert a pixel distance to metric using the known physical size of the ArUco tag used as origin."""
     """ In porcess of development """
     orig_pix = aruco_width.get(origin_tag)
 
