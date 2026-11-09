@@ -12,7 +12,7 @@ Measuring pole-to-pole distances along warehouse racking by hand is slow and err
 
 ## How it works
 
-End to end on one rack bay: raw drone frames in, a distance for every pole pair out.
+End to end: raw drone frames in, every bay stitched and measured, bays accumulated into the whole aisle, a distance for every pole pair out.
 
 ![end to end: drone frames to pole-to-pole distances](docs/pipeline.gif)
 
@@ -20,6 +20,7 @@ End to end on one rack bay: raw drone frames in, a distance for every pole pair 
 2. **Stitch each set.** `src/stitch.py` hands the set to OpenCV's Stitcher.
 3. **Level the panorama.** `src/segm_rotate.py` detects the shelf beam with YOLO, masks it with SAM, fits a line through the mask, and rotates by that angle.
 4. **Measure.** `src/measure_aruco.py` detects the tags, derives a pixels-to-metric ratio from the known tag size, and reports the distance between tag centres.
+5. **Repeat per bay.** Steps 1 to 4 run for every pole-to-pole gap along the aisle, and the stitched bays accumulate into the full-aisle panorama at the top of this page.
 
 ## Results
 
