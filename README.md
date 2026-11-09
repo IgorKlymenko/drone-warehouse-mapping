@@ -2,13 +2,32 @@
 
 Turns a drone flyover video of warehouse racking into stitched panoramas and measures the distance between rack poles from the ArUco tags mounted on them. For mapping rack layouts without walking the aisles with a tape measure.
 
-![demo](docs/pipeline.gif)
+![whole aisle stitched from drone video](docs/aisle.jpg)
 
-<!-- docs/pipeline.gif and the stage clips in docs/ are built from the committed results/set_10 sample. To replace with a live run: screen-record `python main.py` from src/ with the full pipeline uncommented, ~15 seconds. -->
+<sub>One aisle, stitched end to end from a single drone pass. Shown as two rows.</sub>
 
 ## Why I built this
 
 Measuring pole-to-pole distances along warehouse racking by hand is slow and error-prone. The racks already carried ArUco tags of known size on every pole, and a drone could fly an aisle in minutes. So I wrote a pipeline that rebuilds each rack bay from the video and reads the distances off the tags.
+
+## How it works
+
+![frames to measured panorama](docs/pipeline.gif)
+
+1. **Pick frames around each pole.** `src/detect_poles.py` runs YOLO on every extracted frame, tracks poles by their ArUco tag, and groups frames so each set spans one pole-to-pole gap.
+2. **Stitch each set.** `src/stitch.py` hands the set to OpenCV's Stitcher.
+3. **Level the panorama.** `src/segm_rotate.py` detects the shelf beam with YOLO, masks it with SAM, fits a line through the mask, and rotates by that angle.
+4. **Measure.** `src/measure_aruco.py` detects the tags, derives a pixels-to-metric ratio from the known tag size, and reports the distance between tag centres.
+
+## Results
+
+Four bays from one run, tags detected and boxed:
+
+![four stitched bays with detected tags](docs/bays.jpg)
+
+The last step prints every pole-to-pole distance and plots their distribution across the aisle:
+
+<img src="docs/distances.png" width="520" alt="histogram of pole-to-pole distances">
 
 ## Run it locally
 
@@ -25,42 +44,15 @@ You also need, relative to the repo root:
 - `weights/configs/data.yaml` — class names for those weights
 - `weights/sam/sam_vit_h_4b8939.pth` — downloaded automatically on first run if absent
 
-Then:
-
-```bash
-cd src
-python main.py
-```
-
-As committed, `main.py` only runs the first step (rotate the video to portrait and split it into 20-second segments). The rest of the pipeline is there but commented out. Uncomment the stages you want in order. A GPU helps for the SAM and YOLO steps.
-
-## How it works
-
-Four stages, one module each. Every clip below is the same rack bay (`results/set_10`) going through the pipeline.
-
-**1. Pick frames around each pole** — `src/detect_poles.py` runs YOLO on every extracted frame, tracks poles by their ArUco tag, and groups the frames so each set spans one pole-to-pole gap.
-
-![frames](docs/01_frames.gif)
-
-**2. Stitch each set into a panorama** — `src/stitch.py` hands the set to OpenCV's Stitcher.
-
-![stitch](docs/02_stitch.gif)
-
-**3. Level it** — `src/segm_rotate.py` detects the shelf beam with YOLO, masks it with SAM, fits a line through the mask, and rotates by that angle.
-
-![rotate](docs/03_rotate.gif)
-
-**4. Find the tags, measure the gap** — `src/measure_aruco.py` detects the ArUco tags, uses the known tag size for a pixels-to-metric ratio, and reports the distance between tag centres.
-
-![measure](docs/04_measure.gif)
+Then `cd src && python main.py`. As committed, `main.py` only runs the first step (rotate the video to portrait and split it into 20-second segments). The rest of the pipeline is there but commented out; uncomment the stages you want in order. A GPU helps for the SAM and YOLO steps.
 
 ## The hard part
 
 Deciding which frames go into which panorama. The first version (June 2024) cut the video into fixed windows of `frame_rate * frames_per_pano` frames and stitched each window. That breaks whenever the drone changes speed: a panorama ends up with one pole, or three, and the distance measurement is meaningless.
 
-The fix in `detect_poles.py` runs a YOLO model on every extracted frame, tracks each pole by the ArUco tag nearest to it, and records the first and last frame where that pole is visible. A panorama is then built from the last three frames of pole N plus the first three of pole N+1, so every stitched image spans exactly one gap and contains both tags it needs.
+The fix in `detect_poles.py` runs YOLO on every extracted frame, tracks each pole by the ArUco tag nearest to it, and records the first and last frame where that pole is visible. A panorama is then built from the last three frames of pole N plus the first three of pole N+1, so every stitched image spans exactly one gap and contains both tags it needs.
 
-The tradeoff is a custom-trained YOLO model that has to be maintained, a GPU-sized dependency for a step that used to be arithmetic, and a hard requirement that every pole carry a tag. I took that over the fixed-window approach because the whole point is the measurement, and the measurement is only valid if the panorama boundaries follow the poles.
+The tradeoff is a custom-trained YOLO model to maintain, a GPU-sized dependency for a step that used to be arithmetic, and a hard requirement that every pole carry a tag. I took that over fixed windows because the measurement is only valid if the panorama boundaries follow the poles.
 
 ## Stack
 
