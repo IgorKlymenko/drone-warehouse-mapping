@@ -24,6 +24,10 @@ End to end: raw drone frames in, every bay stitched and measured, bays accumulat
 
 ## Results
 
+The whole aisle at full resolution, read left to right across three rows. Click to zoom:
+
+![full aisle panorama at native resolution](docs/aisle_full.jpg)
+
 Four bays from one run, tags detected and boxed:
 
 ![four stitched bays with detected tags](docs/bays.jpg)
