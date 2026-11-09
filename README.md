@@ -12,7 +12,7 @@ Measuring pole-to-pole distances along warehouse racking by hand is slow and err
 
 ## How it works
 
-End to end: raw drone frames in, every bay stitched and measured, bays accumulated into the whole aisle, a distance for every pole pair out.
+End to end: raw drone frames in, every bay stitched and measured, bays accumulated into the whole aisle.
 
 ![end to end: drone frames to pole-to-pole distances](docs/pipeline.gif)
 
