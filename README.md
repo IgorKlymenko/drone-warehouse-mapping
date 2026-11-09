@@ -45,7 +45,7 @@ uv run src/main.py --video path/to/flight.mp4        # uv installs the dependenc
 # or: pip install -r requirements.txt && python src/main.py --video path/to/flight.mp4
 ```
 
-Two model files are needed. SAM downloads itself on first use. The YOLO pole/beam model is custom-trained and not in the repo; put it at `weights/yolo/vert-stitch-YOLOv9.pt` or pass `--yolo-weights`. The script checks for both before it starts and tells you what's missing.
+Two model files are needed. SAM downloads itself on first use. The YOLO pole/beam model is custom-trained and available on request (open an issue or email me); put it at `weights/yolo/vert-stitch-YOLOv9.pt` or pass `--yolo-weights`. The script checks for both before it starts and tells you what's missing.
 
 Everything lands in `output/`: per-bay frame sets, `stitched/`, `rotated/`, `stitched_aruco/`, then `distances.csv` and `distances.png`. Thresholds, tag sizes in metres, the ArUco dictionary and all paths are flags; `--help` lists them. The run is split into seven stages and you can resume or run a slice:
 
@@ -74,4 +74,4 @@ Python, OpenCV (Stitcher, ArUco), Ultralytics YOLO, Segment Anything, PyTorch, s
 Works end to end on the sample footage. Still missing:
 
 - No automated tests. The OpenCV stages have been run on the committed `results/set_10` sample; the YOLO and SAM stages were last run on the original footage in August 2024.
-- The YOLO weights are not published, so a fresh clone can run only the OpenCV stages until you supply them.
+- The YOLO weights are available on request rather than in the repo, so a fresh clone runs the OpenCV stages out of the box and the full pipeline once you have them.
