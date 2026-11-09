@@ -22,7 +22,7 @@ ARUCO_DICT = {
     "DICT_ARUCO_ORIGINAL": cv2.aruco.DICT_ARUCO_ORIGINAL,
 }
 
-# Physical size of the printed tags, keyed by tag-ID class (see transform_into_metric).
+# Physical size of the printed tags in metres, keyed by tag-ID class (see transform_into_metric).
 ARUCO_METRIC = {
     "0": 0.1,    # even tags
     "1": 0.084,  # odd tags

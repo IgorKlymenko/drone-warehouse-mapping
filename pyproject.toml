@@ -1,0 +1,22 @@
+[project]
+name = "vertical-distance-mapping-warehouse"
+version = "0.1.0"
+description = "Drone video of warehouse racking -> stitched bay panoramas -> pole-to-pole distances from ArUco tags"
+requires-python = ">=3.9"
+dependencies = [
+    "opencv-python",
+    "numpy",
+    "matplotlib",
+    "seaborn",
+    "natsort",
+    "imutils",
+    "ultralytics",
+    "torch",
+    "segment-anything",
+    "scipy",
+    "scikit-learn",
+    "pyyaml",
+]
+
+[tool.uv]
+package = false

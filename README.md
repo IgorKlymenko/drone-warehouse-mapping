@@ -41,17 +41,21 @@ The last step prints every pole-to-pole distance (in meters) and plots their dis
 ```bash
 git clone https://github.com/IgorKlymenko/vertical_distance_mapping_warehouse.git
 cd vertical_distance_mapping_warehouse
-pip install -r requirements.txt
+uv run src/main.py --video path/to/flight.mp4        # uv installs the dependencies itself
+# or: pip install -r requirements.txt && python src/main.py --video path/to/flight.mp4
 ```
 
-You also need, relative to the repo root:
+Two model files are needed. SAM downloads itself on first use. The YOLO pole/beam model is custom-trained and not in the repo; put it at `weights/yolo/vert-stitch-YOLOv9.pt` or pass `--yolo-weights`. The script checks for both before it starts and tells you what's missing.
 
-- `data/raw/sample1.mp4` — the drone video (path is hardcoded in `src/main.py`)
-- `weights/yolo/vert-stitch-YOLOv9.pt` — custom YOLO weights for pole and beam detection (not in the repo)
-- `weights/configs/data.yaml` — class names for those weights
-- `weights/sam/sam_vit_h_4b8939.pth` — downloaded automatically on first run if absent
+Everything lands in `output/`: per-bay frame sets, `stitched/`, `rotated/`, `stitched_aruco/`, then `distances.csv` and `distances.png`. Thresholds, tag sizes in metres, the ArUco dictionary and all paths are flags; `--help` lists them. The run is split into seven stages and you can resume or run a slice:
 
-Then `cd src && python main.py`. As committed, `main.py` only runs the first step (rotate the video to portrait and split it into 20-second segments). The rest of the pipeline is there but commented out; uncomment the stages you want in order. A GPU helps for the SAM and YOLO steps.
+```bash
+uv run src/main.py --video flight.mp4 --stop-after stitch        # stop before the GPU steps
+uv run src/main.py --video flight.mp4 --start-at rotate          # pick up from existing output/
+uv run src/main.py --video flight.mp4 --poles-conf 0.5 --tag-size-even 0.12 --no-show
+```
+
+A GPU helps for the `detect` and `rotate` stages. The `stitch`, `mark` and `measure` stages need only OpenCV.
 
 ## The hard part
 
@@ -67,9 +71,7 @@ Python, OpenCV (Stitcher, ArUco), Ultralytics YOLO, Segment Anything, PyTorch, s
 
 ## Status
 
-Last substantive commit August 2024. Works end to end on the sample footage but not finished:
+Works end to end on the sample footage. Still missing:
 
-- The full pipeline in `main.py` is commented out; the entry point only preprocesses video.
-- `draw_distance` in `detect_poles.py` and the ArUco-anchored stitcher in `measure_aruco.py` are unfinished or superseded dead code.
-- Paths, confidence thresholds, and tag sizes are hardcoded constants, not arguments.
-- No tests.
+- No automated tests. The OpenCV stages have been run on the committed `results/set_10` sample; the YOLO and SAM stages were last run on the original footage in August 2024.
+- The YOLO weights are not published, so a fresh clone can run only the OpenCV stages until you supply them.

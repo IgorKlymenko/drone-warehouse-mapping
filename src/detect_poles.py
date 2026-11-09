@@ -9,7 +9,7 @@ from natsort import natsorted
 import argparse
 import imutils
 import shutil
-from aruco_config import ARUCO_DICT, ARUCO_METRIC
+from aruco_config import ARUCO_DICT
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -67,7 +67,7 @@ class Pole:
         self.lifetime = lifetime
 
 
-def extract_frames(SOURCE_DIR, FRAME_DIR, FRAME_RATE):
+def extract_frames(SOURCE_DIR, FRAME_DIR, FRAME_RATE, rotate=False):
     os.makedirs(FRAME_DIR, exist_ok=True)
 
     # Process each video in the source directory
@@ -83,6 +83,8 @@ def extract_frames(SOURCE_DIR, FRAME_DIR, FRAME_RATE):
 
         # Process every 10th frame
         if frame_id % FRAME_RATE == 0:
+            if rotate:
+                frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
             output_path = os.path.join(FRAME_DIR, f"frame_{frame_id//FRAME_RATE:04d}.jpg")
             cv2.imwrite(output_path, frame)
 
@@ -91,7 +93,7 @@ def extract_frames(SOURCE_DIR, FRAME_DIR, FRAME_RATE):
     print(f"Frame extraction completed. Frames saved in {FRAME_DIR}.")
 
 
-def detect_poles(FRAME_DIR, OUTPUT_DIR, WEIGHTS_DIR, POLES_CONF):
+def detect_poles(FRAME_DIR, OUTPUT_DIR, WEIGHTS_DIR, POLES_CONF, yolo_weights=None, aruco_type="DICT_4X4_1000"):
     os.makedirs(WEIGHTS_DIR, exist_ok=True)
     poles = {}
 
@@ -103,7 +105,7 @@ def detect_poles(FRAME_DIR, OUTPUT_DIR, WEIGHTS_DIR, POLES_CONF):
     print(f"Device being used: {DEVICE}")
 
     # Load YOLO model
-    YOLOmodel = YOLO(os.path.join(WEIGHTS_DIR, "yolo", "vert-stitch-YOLOv9.pt"))
+    YOLOmodel = YOLO(yolo_weights or os.path.join(WEIGHTS_DIR, "yolo", "vert-stitch-YOLOv9.pt"))
 
     DETECTED_DIR = OUTPUT_DIR
     os.makedirs(DETECTED_DIR, exist_ok=True)
@@ -116,7 +118,7 @@ def detect_poles(FRAME_DIR, OUTPUT_DIR, WEIGHTS_DIR, POLES_CONF):
 
             #DETECT ARUCOS
 
-            aruco_markers, aruco_width = detect_center_aruco(image_path, resolution= 1024)
+            aruco_markers, aruco_width = detect_center_aruco(image_path, resolution= 1024, aruco_type=aruco_type)
 
 
             frame = cv2.imread(image_path)
@@ -165,7 +167,7 @@ def detect_poles(FRAME_DIR, OUTPUT_DIR, WEIGHTS_DIR, POLES_CONF):
 
 
 
-def detect_center_aruco(image_path, resolution):
+def detect_center_aruco(image_path, resolution, aruco_type="DICT_4X4_1000"):
     """Helper Function - Detect Aruco + Measures Detects Corner and Central parts of the Aruco"""
 
     aruco_center = {}
@@ -177,7 +179,7 @@ def detect_center_aruco(image_path, resolution):
 
     args = {
         "image": str(image_path),  # Set your image path here
-        "type": "DICT_4X4_1000"       # Set the ArUCo tag type here
+        "type": aruco_type       # Set the ArUCo tag type here
     }
 
         
@@ -296,63 +298,3 @@ def sort_images(SOURCE_DIR, DEST_DIR, FRAMES_PER_PANO, poles):
             print(f"Skipped panorama creation: insufficient frames ({len(panorama_frames)} != {FRAMES_PER_PANO})")
 
     print(f"\nFinished processing. Created {pano_count} panorama sets.")
-
-
-def draw_distance(SOURCE_DIR, poles):
-    """ In porcess of development """
-    # Set of calibrations for 4090 images
-    arucoParams.adaptiveThreshWinSizeMin = 4
-    arucoParams.adaptiveThreshWinSizeMax = 25
-    arucoParams.adaptiveThreshWinSizeStep = 8
-    arucoParams.minMarkerPerimeterRate = 0.017
-    arucoParams.maxMarkerPerimeterRate = 4
-    arucoParams.cornerRefinementMinAccuracy = 0.01  
-
-
-    for filename in natsorted(os.listdir(SOURCE_DIR)):
-        if filename.endswith(".jpg"):
-            print("\n \n \nNEW IMAGE")
-            image_path = os.path.join(SOURCE_DIR, filename)
-            aruco_center, aruco_width = detect_center_aruco(image_path=image_path, resolution = 4090)
-            print(aruco_center, aruco_width)
-            tags_on_pole = []
-            
-
-            for tag in aruco_center:
-                if tag in poles:
-                    tags_on_pole.append(tag)
-                else:
-                    tag_not_on_pole = tag
-
-
-            if len(tags_on_pole) > 1:
-                length = transform_into_metric(aruco_center.get(tags_on_pole[1])[0] - aruco_center.get(tags_on_pole[0])[0], tag_not_on_pole, aruco_width)
-                print(length)
-
-
-
-def transform_into_metric(pix_dist, origin_tag, aruco_width):
-    """Convert a pixel distance to metric using the known physical size of the ArUco tag used as origin."""
-    """ In porcess of development """
-    orig_pix = aruco_width.get(origin_tag)
-
-    if origin_tag > 9 or (origin_tag < 930 and origin_tag > 943): # Included Edge Cases
-        key = origin_tag % 2
-    else:
-        key = 99
-
-    orig_metric = ARUCO_METRIC.get(str(key))
-    ratio = orig_metric / orig_pix
-
-    return pix_dist * ratio
-
-
-
-
-#if __name__ == "__main__":
-    #extract_frames(SOURCE_DIR = VIDEO_DIR, FRAME_DIR = FRAME_DIR)
-    #poles = detect_poles(FRAME_DIR = FRAME_DIR, OUTPUT_DIR = CLAS_DIR, WEIGHTS_DIR = WEIGHTS_DIR)
-    #for p in poles:
-    #    print(f"Tag: {poles.get(p).id}, start: {poles.get(p).start}, end: {poles.get(p).end}, lifetime: {poles.get(p).lifetime}")
-
-    #sort_images(SOURCE_DIR= FRAME_DIR, DEST_DIR=FOLD_DIR, FRAMES_PER_PANO = FRAMES_PER_PANO, poles=poles)

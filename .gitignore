@@ -10,3 +10,5 @@ weights/
 runs/
 src/runs/
 results/sorting/
+output/
+uv.lock
