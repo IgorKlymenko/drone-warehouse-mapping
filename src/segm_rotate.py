@@ -6,24 +6,23 @@ import torch
 from segment_anything import sam_model_registry, SamPredictor
 import cv2
 import numpy as np
-from scipy.ndimage import zoom
 
 from matplotlib import pyplot as plt
 import yaml
 
 from sklearn.linear_model import LinearRegression
 from scipy.ndimage import rotate
-
-import torch
-
+import shutil
 
 
-def rotate_yolo(BASE_DIR, IMAGE_DIR):
-    WEIGHTS_DIR = os.path.join(BASE_DIR, "weights")
+
+def rotate_yolo(WEIGHTS_DIR, IMAGE_DIR, yolo_weights=None, conf=0.1):
     # Download pretrained file for Segment Anything Model (SAM)
-    if "sam_vit_h_4b8939.pth" not in os.listdir(os.path.join(WEIGHTS_DIR, "sam")):
+    os.makedirs(os.path.join(WEIGHTS_DIR, "sam"), exist_ok=True)
+    if not os.path.exists(os.path.join(WEIGHTS_DIR, "sam", "sam_vit_h_4b8939.pth")):
         url = "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth"
         filename = os.path.join(WEIGHTS_DIR, "sam", "sam_vit_h_4b8939.pth")
+        print(f"Downloading SAM weights (2.5 GB) to {filename} ...")
         urllib.request.urlretrieve(url, filename)
         print(f"Downloaded {filename}")
 
@@ -51,13 +50,20 @@ def rotate_yolo(BASE_DIR, IMAGE_DIR):
     predictor = SamPredictor(sam)
 
     # YOLO model settigns for object IDENTIFICATION 
-    YOLOmodel = YOLO(os.path.join(WEIGHTS_DIR, "yolo/vert-stitch-YOLOv9.pt"))
+    YOLOmodel = YOLO(yolo_weights or os.path.join(WEIGHTS_DIR, "yolo/vert-stitch-YOLOv9.pt"))
 
     STITCHED_DIR = os.path.join(IMAGE_DIR, "stitched")
-    # Dirs - change for yourself
-    saved_image_path = os.path.join('runs', 'detect', natsorted(os.listdir(os.path.join('runs', 'detect')))[-1], 'image0.jpg')
-    if os.path.exists(saved_image_path):
-        os.rename(saved_image_path, processed_yolo)
+    ROTATED_DIR = os.path.join(IMAGE_DIR, "rotated")
+    YOLO_DIR = os.path.join(IMAGE_DIR, "yolo")
+    os.makedirs(ROTATED_DIR, exist_ok=True)
+
+    # Class names for the plot labels; fall back to generic names if the yaml is absent
+    names_yaml = os.path.join(WEIGHTS_DIR, "configs", "data.yaml")
+    if os.path.exists(names_yaml):
+        with open(names_yaml, 'r') as file:
+            class_names = yaml.safe_load(file)['names']
+    else:
+        class_names = {}
 
     # For each image in the file directory 
     for filename in natsorted(os.listdir(STITCHED_DIR)):
@@ -65,17 +71,18 @@ def rotate_yolo(BASE_DIR, IMAGE_DIR):
 
             # Object Detection using YOLO
             image_path = os.path.join(STITCHED_DIR, filename)
-            results = YOLOmodel.predict(image_path, imgsz = 1024, conf = 0.1, save = True, save_txt = True, save_conf = True)   ## 0.02 is the most optimmal for this 30 images trained model
+            results = YOLOmodel.predict(image_path, imgsz = 1024, conf = conf, save = True, save_txt = True, save_conf = True,
+                                        project = YOLO_DIR, name = "predict", exist_ok = True)   ## 0.02 is the most optimmal for this 30 images trained model
 
             name, ext = os.path.splitext(filename)
             new_filename = name + '.txt'
+            PROC_IMG_DIR = os.path.join(YOLO_DIR, "predict", "labels", new_filename)
 
-            YOLO_DIR = os.path.join('runs', 'detect', natsorted(os.listdir(os.path.join('runs', 'detect')))[-1])
-            PROC_IMG_DIR = os.path.join(YOLO_DIR, "labels", new_filename)
-
-            # Going into the basic new dir of YOLO output results
-            processed_yolo = os.path.join(YOLO_DIR, natsorted(os.listdir(STITCHED_DIR))[-1])
-            print(processed_yolo) # Post-Porocessed RESULTS 1
+            if not os.path.exists(PROC_IMG_DIR):
+                # YOLO found nothing to level against: keep the panorama as is so later stages still run
+                print(f"[WARN] {filename}: no beam detected, copying unrotated")
+                shutil.copy(image_path, os.path.join(ROTATED_DIR, filename))
+                continue
             # Read the image to get its dimensions
             image = cv2.imread(image_path)
             image_height, image_width, _ = image.shape
@@ -142,9 +149,6 @@ def rotate_yolo(BASE_DIR, IMAGE_DIR):
 
 
             # Using YAML file for segmentation classes 
-            with open(os.path.join(WEIGHTS_DIR, "configs/data.yaml"), 'r') as file:
-                coco_data = yaml.safe_load(file)
-                class_names = coco_data['names']
 
             color_map = {}
             for class_id in class_ids:
@@ -180,7 +184,7 @@ def rotate_yolo(BASE_DIR, IMAGE_DIR):
             
 
             for class_id, bbox in zip(class_ids, bboxes):
-                class_name = class_names[class_id]
+                class_name = class_names.get(class_id, f'class_{class_id}') if isinstance(class_names, dict) else (class_names[class_id] if class_id < len(class_names) else f'class_{class_id}')
                 # print(f'Class ID: {class_id}, Class Name: {class_name}, BBox coordinates: {bbox}')
 
                 color = color_map[class_id]
@@ -270,9 +274,6 @@ def rotate_yolo(BASE_DIR, IMAGE_DIR):
             plt.figure(figsize=(10, 10))
             plt.imshow(rotated_image)
             plt.axis('off')
-
-            if "rotated" not in os.listdir(IMAGE_DIR):
-                os.mkdir(os.path.join(IMAGE_DIR, "rotated"))
 
             plt.savefig(os.path.join(IMAGE_DIR, "rotated", filename), bbox_inches='tight', pad_inches=0, dpi=300)
 

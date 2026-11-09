@@ -1,13 +1,11 @@
 import cv2
 import os
-import numpy as np
-import matplotlib.pyplot as plt
 import sys
 from natsort import natsorted  # sorting purposes
 
 
-import argparse
 import imutils
+from aruco_config import ARUCO_DICT
 
 cv2.ocl.setUseOpenCL(False)
 
@@ -49,147 +47,6 @@ arucoParams.minOtsuStdDev = 5.0
 arucoParams.perspectiveRemovePixelPerCell = 8
 arucoParams.perspectiveRemoveIgnoredMarginPerCell = 0.13
 
-ARUCO_DICT = {
-	"DICT_4X4_50": cv2.aruco.DICT_4X4_50,
-	"DICT_4X4_100": cv2.aruco.DICT_4X4_100,
-	"DICT_4X4_250": cv2.aruco.DICT_4X4_250,
-	"DICT_4X4_1000": cv2.aruco.DICT_4X4_1000,
-	"DICT_5X5_50": cv2.aruco.DICT_5X5_50,
-	"DICT_5X5_100": cv2.aruco.DICT_5X5_100,
-	"DICT_5X5_250": cv2.aruco.DICT_5X5_250,
-	"DICT_5X5_1000": cv2.aruco.DICT_5X5_1000,
-	"DICT_6X6_50": cv2.aruco.DICT_6X6_50,
-	"DICT_6X6_100": cv2.aruco.DICT_6X6_100,
-	"DICT_6X6_250": cv2.aruco.DICT_6X6_250,
-	"DICT_6X6_1000": cv2.aruco.DICT_6X6_1000,
-	"DICT_7X7_50": cv2.aruco.DICT_7X7_50,
-	"DICT_7X7_100": cv2.aruco.DICT_7X7_100,
-	"DICT_7X7_250": cv2.aruco.DICT_7X7_250,
-	"DICT_7X7_1000": cv2.aruco.DICT_7X7_1000,
-	"DICT_ARUCO_ORIGINAL": cv2.aruco.DICT_ARUCO_ORIGINAL,
-#	"DICT_APRILTAG_16h5": cv2.aruco.DICT_APRILTAG_16h5,
-#	"DICT_APRILTAG_25h9": cv2.aruco.DICT_APRILTAG_25h9,
-#	"DICT_APRILTAG_36h10": cv2.aruco.DICT_APRILTAG_36h10,
-#	"DICT_APRILTAG_36h11": cv2.aruco.DICT_APRILTAG_36h11
-}
-
-def test_process_video_vertically(input_file, output_folder):
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-
-    cap = cv2.VideoCapture(input_file)
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    duration = frame_count / fps
-
-    segment = 0
-    frame_num = 0
-    out = None
-
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        if frame_num % int(20 * fps) == 0:
-            if out is not None:
-                out.release()
-            segment += 1
-            output_file = os.path.join(output_folder, f"segment_{segment}.mp4")
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            out = cv2.VideoWriter(output_file, fourcc, fps, (frame.shape[0], frame.shape[1]))
-
-        rotated_frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
-        out.write(rotated_frame)
-        frame_num += 1
-
-    cap.release()
-    if out is not None:
-        out.release()
-
-    print("Video processing completed.")
-
-
-def reverse(SOURCE_DIR, OUTPUT_DIR):
-    # Open the video file
-    cap = cv2.VideoCapture(SOURCE_DIR)
-
-    # Get video properties
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-    # Read the frames from the video and store them in a list
-    frames = []
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-        frames.append(frame)
-
-    # Release the video capture object
-    cap.release()
-
-    # Reverse the list of frames
-    reversed_frames = frames[::-1]
-
-    # Now, `reversed_frames` contains the frames in reverse order
-    # You can process these frames further as needed
-
-    # Optionally, you can write the reversed frames to a new video file
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(OUTPUT_DIR, fourcc, fps, (frame_width, frame_height))
-
-    for frame in reversed_frames:
-        out.write(frame)
-
-    out.release()
-    return OUTPUT_DIR
-
-
-def extract_frames(video_path, output_folder, frame_rate, frames_per_pano):
-    frames_per_stitch = frame_rate * frames_per_pano   #5 frames per panorama -- empiracally measured
-    all_frames = 2000
-
-    # Ensure the output folder exists
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-
-    # Load the video
-    cap = cv2.VideoCapture(video_path)
-    
-    # Check if video opened successfully
-    if not cap.isOpened():
-        print("Error: Could not open video.")
-        return
-
-    frame_count = 0
-    saved_frame_count = 0
-    for i in range(0, all_frames, frames_per_stitch):
-        curr_dir = output_folder + f"/set_{i//frames_per_stitch}"
-        if not os.path.exists(curr_dir):
-            os.makedirs(curr_dir)
-
-        while cap.isOpened() and frame_count < i + frames_per_stitch:
-
-            ret, frame = cap.read()
-            if not ret:
-                break
-
-            if frame_count % frame_rate == 0:
-                # Save the frame as an image file
-                frame_filename = os.path.join(curr_dir, f'frame_{saved_frame_count:04d}.jpg')
-                cv2.imwrite(frame_filename, frame)
-                saved_frame_count += 1
-
-            frame_count += 1
-
-    cap.release()
-    print(f"Extracted {saved_frame_count} frames to '{output_folder}'")
-
-
-
-
 def img_stitch(IMAGE_DIR):  
     """Actual image stitching"""
     stitcher = cv2.Stitcher_create()
@@ -230,7 +87,8 @@ def img_stitch(IMAGE_DIR):
 def set_stitch(IMAGE_DIR):
     """Function that calls img_stitch on the folder with images to stitch"""
     for filename in natsorted(os.listdir(IMAGE_DIR)):
-        if not filename.endswith(".DS_Store"):
+        # only the per-bay frame folders, never our own output folders
+        if filename.startswith("set_") and os.path.isdir(os.path.join(IMAGE_DIR, filename)):
             stitched_image = img_stitch(os.path.join(IMAGE_DIR, filename))
             
             if not os.path.exists(os.path.join(IMAGE_DIR, "stitched")):
@@ -241,7 +99,7 @@ def set_stitch(IMAGE_DIR):
             else:
                 print(f"Skipping {filename} due to stitching error.")
 
-def mark_aruco(SOURCE_DIR, IMAGE_DIR):
+def mark_aruco(SOURCE_DIR, IMAGE_DIR, aruco_type="DICT_4X4_1000"):
     """Detect Aruco + Measures Detects Corner and Central parts of the Aruco"""
     if not os.path.exists(os.path.join(IMAGE_DIR, "stitched_aruco")):
         os.makedirs(os.path.join(IMAGE_DIR, "stitched_aruco"))
@@ -252,19 +110,20 @@ def mark_aruco(SOURCE_DIR, IMAGE_DIR):
         return
 
     for filename in natsorted(os.listdir(SOURCE_DIR)):
-        if filename.endswith(".jpg"):
-            image_path = os.path.join(SOURCE_DIR, filename)
-            print("[INFO] loading image...")
-            image = cv2.imread(image_path)
-            image = imutils.resize(image, width=4900) #used sample width based on stitching 5 frames per pano
+        if not filename.endswith(".jpg"):
+            continue
+        image_path = os.path.join(SOURCE_DIR, filename)
+        print("[INFO] loading image...")
+        image = cv2.imread(image_path)
+        image = imutils.resize(image, width=4900) #used sample width based on stitching 5 frames per pano
 
 
-            args = {
-                "image": str(image_path),  # Set your image path here
-                "type": "DICT_4X4_1000"       # Set the ArUCo tag type here
-            }
+        args = {
+            "image": str(image_path),  # Set your image path here
+            "type": aruco_type       # Set the ArUCo tag type here
+        }
 
-            
+        
         if ARUCO_DICT.get(args["type"], None) is None:
             print("[INFO] ArUCo tag of '{}' is not supported".format(
                 args["type"]))
@@ -368,4 +227,3 @@ def mark_aruco(SOURCE_DIR, IMAGE_DIR):
             cv2.imwrite(os.path.join(IMAGE_DIR, "stitched_aruco", f"{filename}"), image)
             if image is None:
                 print(f"Skipping {filename} due to stitching error.")
-

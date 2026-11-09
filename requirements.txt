@@ -9,3 +9,4 @@ segment-anything
 scipy
 scikit-learn
 pyyaml
+imutils

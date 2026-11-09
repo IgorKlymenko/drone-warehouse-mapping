@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
+venv/
+
+# pipeline inputs and outputs (committed samples under results/ are tracked explicitly)
+data/
+weights/
+runs/
+src/runs/
+results/sorting/
+output/
+uv.lock
