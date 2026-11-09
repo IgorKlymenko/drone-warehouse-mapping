@@ -32,7 +32,7 @@ Four bays from one run, tags detected and boxed:
 
 ![four stitched bays with detected tags](docs/bays.jpg)
 
-The last step prints every pole-to-pole distance and plots their distribution across the aisle:
+The last step prints every pole-to-pole distance (in meters) and plots their distribution across the aisle:
 
 <img src="docs/distances.png" width="520" alt="histogram of pole-to-pole distances">
 
